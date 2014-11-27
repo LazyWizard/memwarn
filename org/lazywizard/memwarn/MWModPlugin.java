@@ -12,6 +12,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import org.apache.log4j.Level;
 import org.json.JSONObject;
+import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 
 /**
@@ -43,7 +44,7 @@ public class MWModPlugin extends BaseModPlugin
         final String vmName = System.getProperty("java.vm.name");
         if (vmName == null || !vmName.toLowerCase().contains("hotspot"))
         {
-            Global.getLogger(MWModPlugin.class).log(Level.DEBUG,
+            Global.getLogger(MWModPlugin.class).log(Level.INFO,
                     "Found non-HotSpot VM: " + vmName);
             final int max = (int) (Runtime.getRuntime().maxMemory() / 1048576l);
             final int recommended = (int) (RECOMMENDED_MEMORY_MB * .8f);
@@ -53,7 +54,7 @@ public class MWModPlugin extends BaseModPlugin
         }
 
         // Standard HotSpot VM? Check command line arguments directly
-        Global.getLogger(MWModPlugin.class).log(Level.DEBUG,
+        Global.getLogger(MWModPlugin.class).log(Level.INFO,
                 "Found HotSpot VM: " + vmName);
         for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments())
         {
@@ -86,7 +87,7 @@ public class MWModPlugin extends BaseModPlugin
 
         // Default to warning about memory just to be safe
         Global.getLogger(MWModPlugin.class).log(Level.WARN,
-                "-Xmx arg not found in command line options!");
+                "-Xmx flag not found in command line options!");
         return false;
     }
 
@@ -100,7 +101,12 @@ public class MWModPlugin extends BaseModPlugin
         }
 
         hasChecked = true;
-        if (!hasEnoughMemoryAllocated())
+
+        // Check if player is using a 32-bit JRE on a 64-bit system
+        final String osArch = System.getProperty("os.arch");
+        final boolean canUpgradeJRE = !Sys.is64Bit()
+                && ("amd64".equals(osArch) || "x86_64".equals(osArch));
+        if (canUpgradeJRE || !hasEnoughMemoryAllocated())
         {
             Global.getSector().addTransientScript(new MWNotificationScript());
         }

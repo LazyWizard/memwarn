@@ -30,7 +30,7 @@ public class MWModPlugin extends BaseModPlugin
         // Load mod settings from JSON
         JSONObject settings = Global.getSettings().loadJSON(SETTINGS_FILE);
         RECOMMENDED_MEMORY_MB = settings.optInt("recommendedMaxMemoryInMegabytes", 2048);
-        INSTRUCTIONS_THREAD = settings.optInt("instructionsThread", 0);
+        INSTRUCTIONS_THREAD = settings.optInt("instructionsThreadId", 0);
         OPEN_THREAD_KEY = settings.optInt("launchInstructionsThreadKey", 41);
     }
 
@@ -45,7 +45,7 @@ public class MWModPlugin extends BaseModPlugin
             final int max = (int) (Runtime.getRuntime().maxMemory() / 1048576l);
             final int recommended = (int) (RECOMMENDED_MEMORY_MB * .8f);
             Global.getLogger(MWModPlugin.class).log(Level.DEBUG,
-                    "Memory: " + max + "mb max, " + recommended + "mb recommended");
+                    "Memory: " + max + "mb allocatable, " + recommended + "mb recommended");
             return (max >= recommended);
         }
 
@@ -76,7 +76,7 @@ public class MWModPlugin extends BaseModPlugin
             }
 
             Global.getLogger(MWModPlugin.class).log(Level.DEBUG,
-                    "Memory: " + max + "mb max, " + RECOMMENDED_MEMORY_MB + "mb recommended");
+                    "Memory: " + max + "mb allocatable, " + RECOMMENDED_MEMORY_MB + "mb recommended");
             return (max >= RECOMMENDED_MEMORY_MB);
         }
 
@@ -154,11 +154,10 @@ public class MWModPlugin extends BaseModPlugin
                     }
                 }
             }
-
             // If the player presses this key, go to the forum post containing
             // instructions for allocating more memory to a 64-bit JRE, then
             // remove this script the next frame
-            if (Keyboard.isKeyDown(OPEN_THREAD_KEY))
+            else if (Keyboard.isKeyDown(OPEN_THREAD_KEY))
             {
                 isDone = true;
                 try

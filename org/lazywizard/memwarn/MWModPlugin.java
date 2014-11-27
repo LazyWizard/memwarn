@@ -100,13 +100,9 @@ public class MWModPlugin extends BaseModPlugin
             return;
         }
 
+        // Also check if player is using a 32-bit JRE
         hasChecked = true;
-
-        // Check if player is using a 32-bit JRE on a 64-bit system
-        final String osArch = System.getProperty("os.arch");
-        final boolean canUpgradeJRE = !Sys.is64Bit()
-                && ("amd64".equals(osArch) || "x86_64".equals(osArch));
-        if (canUpgradeJRE || !hasEnoughMemoryAllocated())
+        if (!Sys.is64Bit() || !hasEnoughMemoryAllocated())
         {
             Global.getSector().addTransientScript(new MWNotificationScript());
         }

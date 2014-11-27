@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
@@ -28,7 +27,7 @@ public class MWModPlugin extends BaseModPlugin
     public void onApplicationLoad() throws Exception
     {
         // Load mod settings from JSON
-        JSONObject settings = Global.getSettings().loadJSON(SETTINGS_FILE);
+        final JSONObject settings = Global.getSettings().loadJSON(SETTINGS_FILE);
         RECOMMENDED_MEMORY_MB = settings.optInt("recommendedMaxMemoryInMegabytes", 2048);
         INSTRUCTIONS_THREAD = settings.optInt("instructionsThreadId", 0);
         OPEN_THREAD_KEY = settings.optInt("launchInstructionsThreadKey", 41);
@@ -36,22 +35,27 @@ public class MWModPlugin extends BaseModPlugin
 
     private static boolean hasEnoughMemoryAllocated()
     {
-        // Support for players who replaced their JRE with a non-Oracle one
+        // Support for players who replaced their JRE with a non-HotSpot one
+        // It's possible that the other way works for these VMs; haven't checked
         // IMPORTANT: The -Xmx flag is a _suggestion_ and the actual max memory used
         // by the JRE will be noticably lower - often hundreds of megabytes less!
         // That's why we're only checking for 80% of recommended max memory here
-        if (!System.getProperty("java.vm.name").toLowerCase().contains("hotspot"))
+        final String vmName = System.getProperty("java.vm.name");
+        if (vmName == null || !vmName.toLowerCase().contains("hotspot"))
         {
+            Global.getLogger(MWModPlugin.class).log(Level.DEBUG,
+                    "Found non-HotSpot VM: " + vmName);
             final int max = (int) (Runtime.getRuntime().maxMemory() / 1048576l);
             final int recommended = (int) (RECOMMENDED_MEMORY_MB * .8f);
-            Global.getLogger(MWModPlugin.class).log(Level.DEBUG,
+            Global.getLogger(MWModPlugin.class).log(Level.INFO,
                     "Memory: " + max + "mb allocatable, " + recommended + "mb recommended");
             return (max >= recommended);
         }
 
         // Standard HotSpot VM? Check command line arguments directly
-        List<String> vmArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
-        for (String arg : vmArgs)
+        Global.getLogger(MWModPlugin.class).log(Level.DEBUG,
+                "Found HotSpot VM: " + vmName);
+        for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments())
         {
             arg = arg.toLowerCase().trim();
             if (!arg.startsWith("-xmx"))
@@ -72,15 +76,17 @@ public class MWModPlugin extends BaseModPlugin
                 case 'g':
                     max *= 1024;
                     break;
-                case 'm':
+                default:
             }
 
-            Global.getLogger(MWModPlugin.class).log(Level.DEBUG,
+            Global.getLogger(MWModPlugin.class).log(Level.INFO,
                     "Memory: " + max + "mb allocatable, " + RECOMMENDED_MEMORY_MB + "mb recommended");
             return (max >= RECOMMENDED_MEMORY_MB);
         }
 
         // Default to warning about memory just to be safe
+        Global.getLogger(MWModPlugin.class).log(Level.WARN,
+                "-Xmx arg not found in command line options!");
         return false;
     }
 
@@ -121,7 +127,7 @@ public class MWModPlugin extends BaseModPlugin
         public void advance(float amount)
         {
             // Don't show warning when the player won't be able to see it
-            CampaignUIAPI ui = Global.getSector().getCampaignUI();
+            final CampaignUIAPI ui = Global.getSector().getCampaignUI();
             if (isDone || ui.isShowingDialog() || Global.getSector().isInNewGameAdvance())
             {
                 return;
